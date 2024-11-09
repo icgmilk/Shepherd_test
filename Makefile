@@ -19,7 +19,7 @@ $(CC): shecc
 	make; \
 	cd ..;
 
-update-shecc:
+update:
 	git submodule foreach git pull origin master
 
 shecc:
