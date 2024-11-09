@@ -14,19 +14,21 @@ a.out: src/main.c $(CC)
 out:
 	mkdir out
 
-$(CC):
-	git clone https://github.com/sysprog21/shecc.git; \
+$(CC): shecc
 	cd shecc; \
 	make; \
 	cd ..;
+
+update-shecc:
+	git submodule foreach git pull origin master
+
+shecc:
+	git submodule add https://github.com/sysprog21/shecc.git shecc
 
 run: out/shepherd
 	./out/shepherd
 
 clean:
 	rm -rf src/*.o out/
-
-clean-shecc:
-	rm -rf shecc/
 
 rebuild: clean all
