@@ -539,6 +539,7 @@ void reg_lexer_next_token(regional_lexer_t *lexer)
         token->loc.col = lexer->col;
         token->typ = T_string;
         strncpy(token->literal, token_str, output_len);
+        token->literal[output_len] = '\0';
         lexer->cur_token = token;
         reg_lexer_read_char(lexer, len + 1);
         return;
@@ -586,6 +587,7 @@ void reg_lexer_next_token(regional_lexer_t *lexer)
         token->loc.col = lexer->col;
         token->typ = T_char;
         strncpy(token->literal, token_str, 1);
+        token->literal[1] = '\0';
         lexer->cur_token = token;
         reg_lexer_read_char(lexer, len + 1);
         return;
@@ -670,7 +672,7 @@ void reg_lexer_ident_token(regional_lexer_t *lexer, token_type_t typ, char *buf)
 
     if (lexer->cur_token->typ == typ) {
         if (!buf)
-            return true;
+            return;
 
         strcpy(buf, lexer->cur_token->literal);
         reg_lexer_next_token(lexer);
@@ -702,16 +704,19 @@ void reg_lexer_make_token(regional_lexer_t *lexer, token_type_t typ, int len)
     token->loc.col = lexer->col;
     token->typ = typ;
     strncpy(token->literal, lexer->source + lexer->pos, len);
+    token->literal[len] = '\0';
     lexer->cur_token = token;
     reg_lexer_read_char(lexer, len);
 }
 
 void reg_lexer_make_identifier_token(regional_lexer_t *lexer, int len)
 {
+    char a[100];
     token_t *token = alloc_token(lexer->arena, 1);
     token->loc.line = lexer->line;
     token->loc.col = lexer->col;
     strncpy(token->literal, lexer->source + lexer->pos, len);
+    token->literal[len] = '\0';
 
     if (!strcmp(token->literal, "if"))
         token->typ = T_if;
@@ -896,6 +901,7 @@ token_t *lexer_read_alias_macro(lexer_t *lexer, regional_lexer_t *reg_lexer)
     cur->next = NULL;
     cur = token;
     reg_lexer->inside_macro = false;
+
     return token;
 }
 
