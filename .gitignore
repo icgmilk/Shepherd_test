@@ -54,3 +54,4 @@ dkms.conf
 # Custom
 out/
 .vscode/
+/*.c

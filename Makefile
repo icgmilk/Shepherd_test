@@ -4,8 +4,8 @@ CFLAGS=
 SOURCES = $(wildcard src/*.c)
 
 out/shepherd: a.out out
-	cp a.out out/shepherd; \
-	chmod 777 out/shepherd; \
+	cp a.out out/shepherd && \
+	chmod 777 out/shepherd && \
 	rm -f a.out
 
 a.out: src/main.c $(CC)
@@ -15,12 +15,13 @@ out:
 	mkdir out
 
 $(CC): shecc
-	cd shecc; \
-	make; \
-	cd ..;
+	cd shecc && make && cd ..
 
 update:
-	git submodule foreach git pull origin master
+	git submodule foreach git pull origin master && \
+	cd shecc && \
+	make && \
+	cd ..
 
 shecc:
 	git submodule add https://github.com/sysprog21/shecc.git shecc

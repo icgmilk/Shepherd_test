@@ -1,13 +1,17 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include "defs.h"
 
-int FILE_MAP_LEN = 0;
-char *file_names[MAX_FILE];
-char *sources[MAX_FILE];
+int file_map_idx = 0;
+char *FILE_NAMES[MAX_FILE];
+char *FILE_SOURCES[MAX_FILE];
 
-int file_map_add_entry(char *file_path, char **source_ref, int *len_ref) {
+int macros_idx = 0;
+macro_t *MACROS;
+
+int file_map_add_entry(char *file_path, char **source_ref, int *len_ref)
+{
     char buffer[MAX_LINE_LEN], source = calloc(MAX_SOURCE, sizeof(char));
     int length = 0;
     FILE *f = fopen(file_path, "rb");
@@ -25,23 +29,56 @@ int file_map_add_entry(char *file_path, char **source_ref, int *len_ref) {
         length += strlen(buffer);
     }
     fclose(f);
-    
-    file_names[FILE_MAP_LEN] = calloc(strlen(file_path) + 1, sizeof(char));
-    strcpy(file_names[FILE_MAP_LEN], file_path);
-    sources[FILE_MAP_LEN++] = source;
+
+    FILE_NAMES[file_map_idx] = calloc(strlen(file_path) + 1, sizeof(char));
+    strcpy(FILE_NAMES[file_map_idx], file_path);
+    FILE_SOURCES[file_map_idx++] = source;
 
     source_ref[0] = source;
     len_ref[0] = length;
 
-    return FILE_MAP_LEN - 1;
+    return file_map_idx - 1;
+}
+
+macro_t *add_macro(bool function_like) {
+    macro_t *macro = &MACROS[macros_idx++];
+    macro->functiono_like = function_like;
+    macro->disabled = false;
+    return macro;
+}
+
+macro_t *find_macro(char *name) {
+    if (!name)
+        return NULL;
+
+    for (int i = 0; i < macros_idx; i++) {
+        macro_t *macro = &MACROS[i];
+
+        if (!macro->disabled && !strcmp(name, macro->name->literal))
+            return macro;
+    }
+
+    return NULL;
 }
 
 void init_globals() {
+    MACROS = malloc(MAX_MACROS * sizeof(macro_t));
 }
 
+void free_globals() {
+    free(MACROS);
+
+    for (int i = 0; i < file_map_idx; i++) {
+        free(FILE_NAMES[i]);
+        free(FILE_SOURCES[i]);
+    }
+}
+
+/* produces an error message with location information then exits abnormally,
+ * location is optional. */
 void error(char *str, location_t *location, ...)
 {
-    /* sprintf logic copied from c.c, not boundary check */
+    /* sprintf logic copied from c.c, no boundary check included */
     char ERR_MSG_BUF[100];
     int *var_args = &str + 8;
     int si = 0, bi = 0, pi = 0;
@@ -101,8 +138,34 @@ void error(char *str, location_t *location, ...)
             si++;
         }
     }
-    ERR_MSG_BUF[bi] = 0;
+    ERR_MSG_BUF[bi] = '\0';
 
-    printf("[%s:%d:%d] Error: %s\n", file_names[location->file_idx], location->line, location->col, ERR_MSG_BUF);
+    if (!location) {
+        printf("[ICE] Error: %s\n", ERR_MSG_BUF);
+        exit(1);
+    }
+
+    printf("[%s:%d:%d] Error: %s\n", FILE_NAMES[location->file_idx],
+           location->line, location->col, ERR_MSG_BUF);
+
+    char line[MAX_LINE_LEN], *source = FILE_SOURCES[location->file_idx];
+    int start_pos = 0, len = 0;
+
+    for (int line_num = 1; line_num < location->line; line_num++) {
+        while (source[start_pos] != '\n')
+            start_pos++;
+        start_pos++;
+    }
+    while (source[start_pos + len] != '\n')
+        len++;
+    strncpy(line, source + start_pos, len);
+    line[len] = '\0';
+    printf("%s\n", line);
+    for (len = 0; len < location->col - 1; len++)
+        line[len] = ' ';
+    line[len] = '^';
+    line[len + 1] = '\0';
+    printf("%s\n", line);
+
     exit(1);
 }
