@@ -36,6 +36,16 @@ token_t *alloc_token(token_arena_t *arena, int size)
     return data;
 }
 
+token_t *realloc_token(token_arena_t *arena, token_t *tail, int size){
+    for(int i = 0; i < size; i++){
+        tail[i].next = &arena->data[arena->size + i];
+    }
+    tail[size - 1].next = 0;
+    
+    arena->size += size;
+    return tail[size-1].next;
+}
+
 void arena_free(token_arena_t *arena)
 {
     if (!arena)
